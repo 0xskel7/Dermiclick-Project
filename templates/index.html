@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>📸 كاميرا الذكاء الاصطناعي</title>
+  <style>
+    body {
+      font-family: "Cairo", Arial, sans-serif;
+      margin: 0; padding: 0; text-align: center;
+      background: linear-gradient(to bottom, #c8f4f9, #d7c9f9);
+    }
+    .logo { width: 150px; margin: 30px auto 10px; display: block; }
+    .camera-box {
+      background: #fff; border-radius: 15px; width: 350px;
+      margin: auto; overflow: hidden;
+      box-shadow: 0 0 15px rgba(0,0,0,0.15);
+    }
+    .title { background: #2d6a4f; color: white; padding: 10px; font-size: 20px; font-weight: bold; }
+    video, canvas { width: 100%; height: auto; display: block; background: #333; }
+    .btn {
+      display: block; width: 90%; margin: 15px auto; padding: 12px; font-size: 18px;
+      font-weight: bold; background: #2d6a4f; color: white; border: none; border-radius: 6px;
+      cursor: pointer; transition: 0.3s;
+    }
+    .btn:hover { background: #1b4332; }
+  </style>
+</head>
+<body>
+
+ <img class="logo" src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+
+
+  <div class="camera-box">
+    <div class="title">كاميرا الذكاء الاصطناعي</div>
+    <video id="camera" autoplay playsinline></video>
+    <canvas id="snapshot" style="display:none;"></canvas>
+    <button class="btn" onclick="captureImage()">📷 التقط صورة</button>
+  </div>
+
+  <script>
+    const video = document.getElementById('camera');
+    const canvas = document.getElementById('snapshot');
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => { video.srcObject = stream; })
+      .catch(err => { alert("⚠ لم يتم تشغيل الكاميرا\n" + err.message); });
+
+    function captureImage() {
+      const context = canvas.getContext('2d');
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const base64Image = canvas.toDataURL('image/jpeg');
+
+      fetch("/camera-predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: base64Image })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.prediction) {
+          // 👉 هنا أهم تعديل: إعادة توجيه للصفحة الثانية مع النتيجة
+          window.location.href = `/result?prediction=${encodeURIComponent(data.prediction)}`;
+        } else {
+          alert("❌ فشل في الحصول على التنبؤ");
+        }
+      })
+      .catch(() => { alert("❌ خطأ في الاتصال بالسيرفر"); });
+    }
+  </script>
+</body>
+</html>
