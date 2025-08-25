@@ -4,17 +4,18 @@ from flask import Flask, request, jsonify, render_template
 from PIL import Image
 from predict import predict
 
-# إخفاء رسائل TensorFlow
+# إخفاء رسائل TensorFlow Info
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
+import tensorflow as tf
+
 # -------------------
-# فك ضغط النموذج من Base64
+# فك ضغط النموذج Base64
 # -------------------
 data = '''
 UEsDBBQAAAAIAOe...إلخ (ضع النص الكامل هنا)
 '''
 zip_bytes = base64.b64decode(data.encode('utf-8'))
-import zipfile, io
 with zipfile.ZipFile(io.BytesIO(zip_bytes), 'r') as zf:
     zf.extractall(".")  # سيتم استخراج tiny_model.keras في نفس المجلد
 print("✅ تم استخراج tiny_model.keras")
@@ -22,14 +23,15 @@ print("✅ تم استخراج tiny_model.keras")
 # -------------------
 # تحميل النموذج بعد التأكد من وجوده
 # -------------------
-import tensorflow as tf
 model_path = "tiny_model.keras"
 if not os.path.exists(model_path):
     raise FileNotFoundError("❌ الملف tiny_model.keras غير موجود بعد الاستخراج!")
 
 model = tf.keras.models.load_model(model_path)
-# -------------------
 
+# -------------------
+# إعداد Flask
+# -------------------
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
 TEMP_FILE_NAME = 'temp_upload.jpg'
@@ -63,5 +65,9 @@ def camera_predict():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# -------------------
+# تشغيل السيرفر على Render
+# -------------------
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 3000)), debug=False)
+    port = int(os.environ.get("PORT", 3000))  # استخدام متغير PORT من Render
+    app.run(host='0.0.0.0', port=port, debug=False)
