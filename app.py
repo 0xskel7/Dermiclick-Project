@@ -1,12 +1,18 @@
-from flask import Flask, request, jsonify, render_template
-from predict import predict
 import os
 import base64
-from PIL import Image
 from io import BytesIO
+from PIL import Image
+from flask import Flask, request, jsonify, render_template
+
+# إخفاء رسائل Info من TensorFlow
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+import tensorflow as tf
+from predict import predict  # استدعاء دالتك الخاصة بالتنبؤ
 
 app = Flask(__name__)
 
+# مجلد التحميل المؤقت
 UPLOAD_FOLDER = 'uploads'
 TEMP_FILE_NAME = 'temp_upload.jpg'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -38,6 +44,7 @@ def camera_predict():
         # التنبؤ من النموذج
         result = predict(file_path)
 
+        # حذف الملف المؤقت بعد التنبؤ
         if os.path.exists(file_path):
             os.remove(file_path)
 
@@ -46,5 +53,7 @@ def camera_predict():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# تعديل ليعمل على Render مع Gunicorn
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3000)
+    # أثناء التطوير
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 3000)), debug=False)
