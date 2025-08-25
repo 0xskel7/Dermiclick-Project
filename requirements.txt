@@ -2,6 +2,5 @@ tensorflow
 numpy
 pillow
 flask
-
-
+gunicorn app:app
 
